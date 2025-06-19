@@ -1,5 +1,4 @@
 #include "occ3d/Dataset.h"
-#if 0
 #include <fstream>
 #include <string>
 #include <utility>
@@ -10,21 +9,20 @@
 
 namespace fs = std::filesystem;
 namespace {
-    std::vector<std::string> read_point_cloud_files(const fs::path& pointcloud_path) {
-        std::vector<std::string> filenames;
-        for(const auto& file : fs::directory_iterator(pointcloud_path)) {
+    std::vector<std::string> read_point_cloud_files(const fs::path& path_pc) {
+        std::vector<std::string> files;
+        for(const auto& file : fs::directory_iterator(path_pc)) {
             if(file.path().extension() == ".ply") {
-                filenames.emplace_back(file.path().string());
+                files.emplace_back(file.path().string());
             }
         }
-        if(filenames.empty()) {
-            std::cerr << pointcloud_path << "contains no files with .ply extension"
+        if(files.empty()) {
+            std::cerr << path_pc << "contains no files with .ply extension"
                     << std::endl;
             exit(1);
         }
-        std::sort(filenames.begin(), filenames.end());
-
-        return filenames;
+        std::sort(files.begin(), files.end());
+        return files;
     }
 
     occ3d::Cloud extract_point_cloud(const std::string& filename) {
@@ -44,18 +42,16 @@ namespace {
         }
         return poses;
     }
-} // scoped
+} // private namespace
 
 namespace occ3d {
-    Dataset::Dataset(const std::string& data_dir) {
-        files_ = read_point_cloud_files(fs::path(data_dir) / "PLY/");
-
+    Dataset::Dataset(const std::string& path_data) {
+        files_ = read_point_cloud_files(fs::path(path_data) / "PLY/");
         poses_.reserve(files_.size());
-        poses_ = read_poses(fs::path(data_dir) / "gt_poses.txt");
+        poses_ = read_poses(fs::path(path_data) / "gt_poses.txt");
     }
 
     std::pair<Eigen::Matrix4d, occ3d::Cloud> Dataset::operator[](const size_t idx) const {
         return std::make_pair(poses_[idx], extract_point_cloud(files_[idx]));
     }
 } // namespace Dataset
-#endif

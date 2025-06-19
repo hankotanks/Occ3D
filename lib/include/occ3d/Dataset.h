@@ -10,8 +10,12 @@ namespace occ3d {
 
     class Dataset {
     public:
-        virtual std::size_t size() const = 0;
-        virtual std::pair<Eigen::Matrix4d, Cloud> operator[](const std::size_t idx) const = 0;
+        Dataset(const std::string& path_data);
+        std::size_t size() const { return files_.size(); };
+        std::pair<Eigen::Matrix4d, Cloud> operator[](const std::size_t idx) const;
+    private:
+        std::vector<std::string> files_;
+        std::vector<Eigen::Matrix4d> poses_;
     };
 } // namespace occ3d
 
