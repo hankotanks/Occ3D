@@ -3,9 +3,8 @@
 #include <memory>
 #include <vector>
 #include <Eigen/Core>
-#include "Dataset.hpp"
-
-#include "open3d/Open3D.h"
+#include <open3d/Open3D.h>
+#include "occ3d/Dataset.hpp"
 
 inline void visualize(const occ3d::Cloud& pc) {
     open3d::visualization::DrawGeometries({

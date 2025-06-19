@@ -1,6 +1,6 @@
-[submodule "ext/eigen3"]
-	path = ext/eigen3
+[submodule "lib/ext/eigen3"]
+	path = lib/ext/eigen3
 	url = https://gitlab.com/libeigen/eigen.git
-[submodule "ext/Open3d"]
-	path = ext/Open3D
+[submodule "lib/ext/Open3d"]
+	path = lib/ext/Open3D
 	url = https://github.com/isl-org/Open3D.git

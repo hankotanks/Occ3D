@@ -1,5 +1,5 @@
-#include "occ3d/Dataset.h"
 #if 0
+#include "Dataset.hpp"
 #include <fstream>
 #include <string>
 #include <utility>
@@ -58,4 +58,5 @@ namespace occ3d {
         return std::make_pair(poses_[idx], extract_point_cloud(files_[idx]));
     }
 } // namespace Dataset
+
 #endif

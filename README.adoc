@@ -1,1 +1,42 @@
 == 3D Occupancy Grid Mapping
+
+=== Setup
+
+[source,sh]
+----
+#!/bin/bash
+git clone https://github.com/hankotanks/Occ3D.git
+cd ./Occ3D
+
+# build project and internal dependencies
+git submodule update --init --recursive
+mkdir build && cd build
+cmake .. && make
+----
+
+=== Possible Issues
+
+All dependencies should be bundled with the project.
+However, Open3D sometimes fails to build if the system is missing an LLVM dependency.
+This problem can occur in both the configuration and build stages.
+
+.Configuration
+[source,sh]
+----
+CMake Error at 3rdparty/find_dependencies.cmake:971 (find_library):
+  Could not find CPP_LIBRARY using the following names: c++
+Call Stack (most recent call first):
+  CMakeLists.txt:613 (include)
+----
+
+The solution is to install the LLVM C++ standard library: ``sudo apt-get install libc++-dev libc++abi-dev``.
+
+.Building
+[source,sh]
+----
+make[2]: *** No rule to make target '/usr/lib/llvm-16/lib/libc++.so.1', needed by 'voxelizer'.  Stop.
+make[1]: *** [CMakeFiles/Makefile2:1177: CMakeFiles/voxelizer.dir/all] Error 2
+make: *** [Makefile:156: all] Error 2
+----
+
+Install the requested version off the LLVM standard library if the above error occurs during the build process (replace `16` with the version specified in the error message): ``sudo apt-get install libc++-16-dev libc++abi-16-dev``.
