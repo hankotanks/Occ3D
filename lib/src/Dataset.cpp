@@ -46,9 +46,19 @@ namespace {
 
 namespace occ3d {
     Dataset::Dataset(const std::string& path_data) {
-        files_ = read_point_cloud_files(fs::path(path_data) / "PLY/");
-        poses_.reserve(files_.size());
-        poses_ = read_poses(fs::path(path_data) / "gt_poses.txt");
+        fs::path path(path_data);
+        files_ = read_point_cloud_files(path / "PLY/");
+        size_ = files_.size();
+        poses_.reserve(size_);
+        poses_ = read_poses(path / "gt_poses.txt");
+    }
+
+    Dataset::Dataset(const std::string& path_data, const std::size_t frames_to_process) {
+        fs::path path(path_data);
+        files_ = read_point_cloud_files(path / "PLY/");
+        size_ = std::min(frames_to_process, files_.size());
+        poses_.reserve(size_);
+        poses_ = read_poses(path / "gt_poses.txt");
     }
 
     std::pair<Eigen::Matrix4d, occ3d::Cloud> Dataset::operator[](const size_t idx) const {
