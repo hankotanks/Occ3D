@@ -1,11 +1,17 @@
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 #include "occ3d/Dataset.h"
 #include "occ3d/GridMap.h"
 
 int main(int argc, char* argv[]) {
     if(argc != 3) {
         std::cout << "[ERROR] Must provide data path and voxel size." << std::endl;
+        return 1;
+    }
+
+    if(!std::filesystem::exists(argv[1])) {
+        std::cout << "[ERROR] Provided data path does not exist." << std::endl;
         return 1;
     }
 
