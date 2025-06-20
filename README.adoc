@@ -39,4 +39,4 @@ make[1]: *** [CMakeFiles/Makefile2:1177: CMakeFiles/voxelizer.dir/all] Error 2
 make: *** [Makefile:156: all] Error 2
 ----
 
-Install the requested version off the LLVM standard library if the above error occurs during the build process (replace `16` with the version specified in the error message): ``sudo apt-get install libc++-16-dev libc++abi-16-dev``.
+Install the requested version off the LLVM standard library if the above error occurs during the build process (replace `16` with the version specified in the error message): `sudo apt-get install libc++-16-dev libc++abi-16-dev`.
