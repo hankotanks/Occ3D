@@ -1,6 +1,7 @@
 #include "occ3d/GridMap.h"
 #include <memory>
 #include <unordered_map>
+#include <limits>
 #include <Eigen/Core>
 #include <open3d/Open3D.h>
 #include "occ3d/Bresenham.h"
@@ -15,14 +16,33 @@ namespace {
         Eigen::Vector3d pt_transformed(pt_homo.x(), pt_homo.y(), pt_homo.z());
         return pt_transformed;
     }
+
+    std::vector<float> voxels(std::unordered_map<Eigen::Vector3i, double> occ) {
+        // TODO: Replace with <algorithm>
+        int temp;
+        temp = std::numeric_limits<int>::max();
+        Eigen::Vector3i minima(temp, temp, temp);
+        temp = std::numeric_limits<int>::min();
+        Eigen::Vector3i maxima(temp, temp, temp);
+        for(const auto& [cell, log_odds] : occ) {
+            minima = minima.cwiseMin(cell);
+            maxima = maxima.cwiseMin(cell);
+        }
+
+        Eigen::Vector3i extent(maxima - minima + Eigen::Vector3i(1, 1, 1));
+        std::vector<float> field(extent.x() * extent.y() * extent.z(), 0.f);
+
+        for(const auto& [cell, log_odds] : occ) {
+            Eigen::Vector3i coord = cell - minima;
+            field[coord.x() + coord.y() + extent.x() + coord.z() * extent.x() * extent.y()] = 1.f;
+        }
+
+        return field;
+    }
 }
 
 namespace occ3d {
     void GridMap::process(Dataset& data) {
-        // setting this to null indicates that the point cloud must be
-        // reconverted to open3d representation before visualization
-        vis_ = NULL;
-
         const std::size_t data_frame_count = data.size();
         if(data_frame_count == 0) return;
         const std::size_t data_frame_count_digits = \
@@ -63,51 +83,17 @@ namespace occ3d {
             const Eigen::Vector3i cell = GridMap::point_to_cell(point);
             for(const Eigen::Vector3i cell_path : Bresenham(cell_pose, cell)) {
                 if(occ_.count(cell_path) == 0)
-                    occ_.insert(std::make_pair(cell_path, prob_prior_));
+                    occ_.insert(std::make_pair(cell_path, log_odds_prior_));
 
-                occ_[cell_path] += prob_free_;
-                occ_[cell_path] -= prob_prior_;
+                occ_[cell_path] += log_odds_free_;
+                occ_[cell_path] -= log_odds_prior_;
             }
 
             if(occ_.count(cell) == 0)
-                occ_.insert(std::make_pair(cell, prob_prior_));
+                occ_.insert(std::make_pair(cell, log_odds_prior_));
 
-            occ_[cell] += prob_occupied_;
-            occ_[cell] -= prob_prior_;
+            occ_[cell] += log_odds_occupied_;
+            occ_[cell] -= log_odds_prior_;
         }
-    }
-
-    void GridMap::visualize_update() {
-        if(vis_ == NULL) {
-            std::cout << "[INFO] Preparing occupancy visualization." << std::endl;
-
-            vis_ = std::make_shared<open3d::geometry::PointCloud>();
-            for(const auto& [cell, log_odds] : occ_) {
-                const double prob = GridMap::log_odds_to_prob(log_odds);
-                if(prob < 0.4) continue;
-                vis_->points_.emplace_back(GridMap::cell_to_point(cell));
-                const double color = 1.0 - prob;
-                vis_->colors_.emplace_back(color, color, color);
-            }
-#if 0
-            // keeping this here as proof that I understand how to
-            // use std::transform.
-            // unfortunately, <algorithm> does not have a 
-            // function that allows me to populate both colors_ and points_
-            // from a single input iterator
-            std::transform(occ.begin(), occ.end(), points.begin(),
-                [](const std::pair<const Eigen::Vector3i, double>& voxel) {
-                    const double log_odds = std::get<1>(voxel);
-                    return cell_to_point(std::get<0>(voxel));
-                });
-#endif
-            std::cout << "[INFO] Visualization finished with ";
-            std::cout << (vis_->points_).size() << " points." << std::endl;
-        } else std::cout << "[INFO] Occupancy grid is unchanged. Re-rendering." << std::endl;
-    }
-
-    void GridMap::visualize() {
-        GridMap::visualize_update();
-        open3d::visualization::DrawGeometries({vis_});
     }
 }
