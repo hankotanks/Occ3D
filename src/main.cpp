@@ -7,7 +7,7 @@
 #include "occ3d/vis/VoxelVis.h"
 
 int main(int argc, char* argv[]) {
-    if(argc != 4) {
+    if(argc != 4 && argc != 5) {
         std::cout << "[ERROR] Must provide data path, voxel size, and cutoff threshold." << std::endl;
         return 1;
     }
@@ -30,15 +30,26 @@ int main(int argc, char* argv[]) {
     cutoff_threshold_parser >> cutoff_threshold;
     if(cutoff_threshold_parser.fail()) {
         std::cout << "[ERROR] Cutoff threshold could not be parsed (" << argv[3] << ")." << std::endl;
+        return 1;
+    }
+
+    size_t frame_count = 0;
+    if(argc == 5) {
+        std::stringstream frame_count_parser(argv[4]);
+        frame_count_parser >> frame_count;
+        if(frame_count_parser.fail()) {
+            std::cout <<"[ERROR] Unable to parse frame count (" << argv[4] << ")." << std::endl;
+            return 1;
+        }
     }
 
     std::string path_data(argv[1]);
-    occ3d::Dataset data(path_data);
+    occ3d::Dataset data = frame_count ? occ3d::Dataset(path_data, frame_count) : occ3d::Dataset(path_data);
 
     occ3d::GridMap occ(voxel_size);
     occ.process(data);
 
-    occ3d::vis::VoxelVis vis{};
+    occ3d::vis::VoxelVis vis(cutoff_threshold);
     vis.prepare(occ);
     vis.show();
 

@@ -5,12 +5,11 @@ namespace occ3d {
     namespace vis {
         void CloudVis::prepare(const GridMap& grid_map) {
             if(vis_) {
-                std::cout << "[INFO] VoxelCloudVis already initialized. Ignoring." << std::endl;
+                std::cout << "[INFO] CloudVis already initialized. Ignoring." << std::endl;
                 return;
             }
             
             std::cout << "[INFO] Preparing occupancy visualization." << std::endl;
-
             vis_ = std::make_shared<open3d::geometry::PointCloud>();
             for(const auto& [cell, log_odds] : grid_map) {
                 if(log_odds < log_odds_threshold_) continue;

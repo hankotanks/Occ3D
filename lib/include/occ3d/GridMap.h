@@ -29,6 +29,7 @@ namespace occ3d {
         auto begin() const { return occ_.cbegin(); }
         auto end() const { return occ_.cend(); }
     private:
+        void process_cell(const Eigen::Vector3i& cell, const Eigen::Vector3i& cell_pose);
         void process_frame(Eigen::Matrix4d pose, const Cloud& points);
         inline Eigen::Vector3i point_to_cell(const Eigen::Vector3d& point) {
             return Eigen::Vector3i(
@@ -39,9 +40,9 @@ namespace occ3d {
         }
         inline Eigen::Vector3d cell_to_point(const Eigen::Vector3i& cell) {
             return Eigen::Vector3d(
-                static_cast<double>(cell.x()) / voxel_size_,
-                static_cast<double>(cell.y()) / voxel_size_,
-                static_cast<double>(cell.z()) / voxel_size_
+                static_cast<double>(cell.x()) * voxel_size_,
+                static_cast<double>(cell.y()) * voxel_size_,
+                static_cast<double>(cell.z()) * voxel_size_
             );
         }
     private:
