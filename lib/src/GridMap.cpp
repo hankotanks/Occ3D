@@ -1,4 +1,5 @@
 #include "occ3d/GridMap.h"
+#include <iomanip>
 #include <memory>
 #include <unordered_map>
 #include <limits>
@@ -6,8 +7,7 @@
 #include <Eigen/Core>
 #include <open3d/Open3D.h>
 #include "occ3d/Bresenham.h"
-#define SCOPE_TIMER_IMPLEMENTATION
-#include "occ3d/util/timer.h"
+#include "occ3d/util/bench.h"
 
 namespace {
     Eigen::Vector3d transform_point(
@@ -21,8 +21,7 @@ namespace {
 }
 
 namespace occ3d {
-    void GridMap::process(Dataset& data) {
-        SCOPE_TIMER_BEGIN();
+    void GridMap::process(const Dataset& data) {
         const std::size_t data_frame_count = data.size();
         if(data_frame_count == 0) return;
         const std::size_t data_frame_count_digits = \
@@ -30,20 +29,26 @@ namespace occ3d {
         
         // keeping this as a standard for loop specifically
         // so that I can print progress
+        util::Bench benchmark;
         for(std::size_t i = 0, j = 0; i < data_frame_count; ++i) {
-            const auto [pose, points] = data[i];
+            const auto& [pose, points] = data[i];
             GridMap::process_frame(pose, points);
-            
             const float completion_f = static_cast<float>(i) / \
                 static_cast<float>(data_frame_count) * 100.f;
             const std::size_t completion = static_cast<std::size_t>(completion_f);
             if(completion != j) {
                 j = completion;
-                std::cout << '[';
-                std::cout << std::setw(data_frame_count_digits);
-                std::cout << std::setfill('0') << i << '/' << data_frame_count;
-                std::cout << "] frames processed." << std::endl;
+                double since = benchmark.duration();
+                std::cout << '['
+                          << std::setw(data_frame_count_digits)
+                          << std::setfill('0') << i << '/' << data_frame_count << "] frames processed after "
+                          << std::setprecision(5) << since << " seconds (avg. "
+                          << std::setprecision(5) << since / static_cast<double>(i) <<  " per frame)." << std::endl;
+                if(vis_) {
+                    vis_->get().prepare(GridMap::cloud());
+                }
             }
+            vis_->get().show();
         }
     }
 
@@ -53,7 +58,7 @@ namespace occ3d {
     ) {
         Bresenham path(cell_pose, cell);
         std::for_each(path.begin(), path.end(), 
-            [&](const Eigen::Vector3i cell_path) {
+            [&](const Eigen::Vector3i& cell_path) {
                 occ_.try_emplace(cell_path, log_odds_prior_);
                 occ_[cell_path] += log_odds_free_;
                 occ_[cell_path] -= log_odds_prior_;
@@ -64,12 +69,24 @@ namespace occ3d {
         occ_[cell] -= log_odds_prior_;
     }
 
-    void GridMap::process_frame(Eigen::Matrix4d pose, const Cloud& points) {
+    void GridMap::process_frame(const Eigen::Matrix4d& pose, const Cloud& points) {
         const Eigen::Vector3i cell_pose = GridMap::point_to_cell(pose.block<3, 1>(0, 3));
         std::for_each(points.cbegin(), points.cend(), 
             [&](const Eigen::Vector3d& point) {
                 const Eigen::Vector3i cell = GridMap::point_to_cell(transform_point(point, pose));
                 GridMap::process_cell(cell, cell_pose);
             });
+    }
+
+    const std::shared_ptr<open3d::geometry::PointCloud> GridMap::cloud() const {
+        std::shared_ptr<open3d::geometry::PointCloud> cloud_curr = \
+            std::make_shared<open3d::geometry::PointCloud>();
+        for(const auto& [cell, log_odds] : occ_) {
+            if(log_odds < log_odds_threshold_) continue;
+            cloud_curr->points_.emplace_back(cell.cast<double>());
+            const double color = 1.0 - util::log_odds_to_prob(log_odds);
+            cloud_curr->colors_.emplace_back(color, color, color);
+        }
+        return cloud_curr;
     }
 }

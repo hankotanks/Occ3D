@@ -1,9 +1,13 @@
 #pragma once
 
 #include <unordered_map>
+#include <optional>
 #include <open3d/Open3D.h>
+
 #include "occ3d/Dataset.h"
+#include "occ3d/Vis.h"
 #include "occ3d/util/logodds.h"
+#include "occ3d/vis/NoVis.h"
 
 template <>
 struct std::hash<Eigen::Vector3i> {
@@ -17,20 +21,25 @@ namespace occ3d {
     class GridMap {
     public:
         GridMap(
-            const double edge_size,
+            const double voxel_size,
+            Vis& visualizer = vis::NoVis::get(),
+            const double prob_threshold = 0.5,
             const double prob_prior = 0.5,
             const double prob_free = 0.4, 
             const double prob_occupied = 0.85
-        ) : voxel_size_(edge_size), 
+        ) : voxel_size_(voxel_size), 
+            vis_(visualizer),
+            log_odds_threshold_(util::prob_to_log_odds(prob_threshold)),
             log_odds_prior_(util::prob_to_log_odds(prob_prior)),
             log_odds_free_(util::prob_to_log_odds(prob_free)), 
             log_odds_occupied_(util::prob_to_log_odds(prob_occupied)) { /* STUB */ }
-        void process(Dataset& data);
+        void process(const Dataset& data);
         auto begin() const { return occ_.cbegin(); }
         auto end() const { return occ_.cend(); }
+        const std::shared_ptr<open3d::geometry::PointCloud> cloud() const;
     private:
         void process_cell(const Eigen::Vector3i& cell, const Eigen::Vector3i& cell_pose);
-        void process_frame(Eigen::Matrix4d pose, const Cloud& points);
+        void process_frame(const Eigen::Matrix4d& pose, const Cloud& points);
         inline Eigen::Vector3i point_to_cell(const Eigen::Vector3d& point) {
             return Eigen::Vector3i(
                 static_cast<int>(std::floor(point.x() / voxel_size_)),
@@ -47,7 +56,8 @@ namespace occ3d {
         }
     private:
         double voxel_size_;
-        double log_odds_prior_, log_odds_free_, log_odds_occupied_;
+        double log_odds_prior_, log_odds_free_, log_odds_occupied_, log_odds_threshold_;
         std::unordered_map<Eigen::Vector3i, double> occ_;
+        std::optional<std::reference_wrapper<Vis>> vis_;
     };
 } // namespace occ3d

@@ -1,0 +1,6 @@
+progress bar simplification
+const and references
+make sure no pointless copies, check constructors
+remove for loop in GridMap::process, use structured bindings
+threading--per frame
+show visualization at increments

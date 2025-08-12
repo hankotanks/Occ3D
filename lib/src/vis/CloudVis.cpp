@@ -1,29 +1,31 @@
 #include "occ3d/vis/CloudVis.h"
-#include "occ3d/util/logodds.h"
+
+#include <open3d/visualization/utility/DrawGeometry.h>
 
 namespace occ3d {
     namespace vis {
-        void CloudVis::prepare(const GridMap& grid_map) {
-            if(vis_) {
-                std::cout << "[INFO] CloudVis already initialized. Ignoring." << std::endl;
-                return;
-            }
-            
-            std::cout << "[INFO] Preparing occupancy visualization." << std::endl;
-            vis_ = std::make_shared<open3d::geometry::PointCloud>();
-            for(const auto& [cell, log_odds] : grid_map) {
-                if(log_odds < log_odds_threshold_) continue;
-                vis_->points_.emplace_back(cell.cast<double>());
-                const double color = 1.0 - util::log_odds_to_prob(log_odds);
-                vis_->colors_.emplace_back(color, color, color);
-            }
+        CloudVis::CloudVis() {
+            win_ = std::make_shared<open3d::visualization::Visualizer>();
+            win_->CreateVisualizerWindow("Vis", 800, 600);
+        }
 
-            std::cout << "[INFO] Visualization finished with ";
-            std::cout << (vis_->points_).size() << " points." << std::endl;
+        CloudVis::~CloudVis() {
+            win_->DestroyVisualizerWindow();
+        }
+
+        void CloudVis::prepare(const std::shared_ptr<open3d::geometry::PointCloud> cloud) {
+            if(vis_ == nullptr) {
+                vis_ = cloud;
+                win_->AddGeometry(vis_);
+            } else {
+                *vis_ = *cloud;
+                win_->UpdateGeometry(vis_);
+            }
         }
 
         void CloudVis::show() const {
-            open3d::visualization::DrawGeometries({vis_});
+            if(!win_->PollEvents()) CloudVis::~CloudVis();
+            win_->UpdateRender();
         }
     }
 }

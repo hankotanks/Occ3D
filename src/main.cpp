@@ -1,7 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+
 #include <Eigen/Core>
+
 #include "occ3d/Dataset.h"
 #include "occ3d/GridMap.h"
 #include "occ3d/vis/VoxelVis.h"
@@ -46,12 +48,9 @@ int main(int argc, char* argv[]) {
     std::string path_data(argv[1]);
     occ3d::Dataset data = frame_count ? occ3d::Dataset(path_data, frame_count) : occ3d::Dataset(path_data);
 
-    occ3d::GridMap occ(voxel_size);
+    occ3d::vis::VoxelVis vis;
+    occ3d::GridMap occ(voxel_size, vis, cutoff_threshold);
     occ.process(data);
-
-    occ3d::vis::VoxelVis vis(cutoff_threshold);
-    vis.prepare(occ);
-    vis.show();
 
     return 0;
 }
